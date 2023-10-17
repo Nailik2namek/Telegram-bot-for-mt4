@@ -138,6 +138,17 @@ def start(update: Update, context: CallbackContext):
 
     return DECISION
 
+# Ajoutez cette fonction de gestionnaire pour la commande /start
+def start(update: Update, context: CallbackContext):
+    user = update.effective_user
+    update.message.reply_html(
+        fr"Salut {user.mention_html()}!",
+        reply_markup=your_custom_keyboard,
+    )
+
+# Ajoutez un gestionnaire pour la commande /start
+dp.add_handler(CommandHandler("start", start))
+
 
 # Define the /language command handler to set the preferred language
 def set_language(update: Update, context: CallbackContext):
