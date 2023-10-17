@@ -1,0 +1,39 @@
+Ce code est un bot Telegram qui permet aux utilisateurs de fournir des signaux de trading et de calculer les informations liées à ces signaux. Voici une explication détaillée de ce que fait chaque partie du code :
+
+1. Importation des bibliothèques et configuration :
+   - Le code commence par l'importation des bibliothèques nécessaires, telles que `asyncio`, `logging`, `math`, etc.
+   - Les informations d'identification MetaAPI et Telegram sont récupérées à partir des variables d'environnement.
+   - La configuration des journaux est mise en place.
+
+2. Définition des états de la conversation :
+   - Les états de la conversation (CALCULATE, TRADE, DECISION, CONNECT, SET_LANGUAGE, SET_CURRENCY, FINISH) sont définis. Ces états aident à gérer le flux de la conversation entre l'utilisateur et le bot.
+
+3. Listes de symboles pris en charge :
+   - La liste des symboles Forex pris en charge est définie dans la variable SYMBOLS.
+
+4. Facteur de risque :
+   - Le facteur de risque est récupéré à partir des variables d'environnement, mais vous pouvez également le définir manuellement.
+
+5. Stockage des données utilisateur :
+   - Un dictionnaire user_data est utilisé pour stocker les données de l'utilisateur pendant la conversation, y compris le solde, le facteur de risque, la langue, la devise et les informations de transaction.
+
+6. Fonctions d'analyse et d'informations sur la transaction :
+   - La fonction `parse_signal` est utilisée pour analyser un signal de trading fourni par l'utilisateur.
+   - La fonction `get_trade_information` calcule les informations relatives à la transaction, telles que la taille de la position, le nombre de pips de stop-loss, le profit potentiel, etc.
+
+7. Commandes Telegram :
+   - Plusieurs commandes sont définies pour interagir avec le bot, notamment /start, /connect, /language, /currency, /trade, et /finish. Ces commandes permettent à l'utilisateur d'initialiser la conversation, de connecter leur compte MetaTrader, de définir la langue, la devise et de fournir des signaux de trading.
+
+8. Logique de la conversation :
+   - Une logique de conversation est définie à l'aide de la bibliothèque python-telegram-bot. Cela permet de gérer l'interaction de l'utilisateur avec le bot, en fonction des commandes qu'il envoie.
+
+9. Point d'entrée principal :
+   - Le point d'entrée principal du programme est dans la fonction `main()`.
+   - Le bot est configuré à l'aide des informations d'identification Telegram et de la bibliothèque python-telegram-bot.
+   - La gestion de la conversation est gérée par un objet ConversationHandler.
+   - L'application s'exécute en continu, écoutant les mises à jour Telegram.
+
+10. Les parties manquantes du code :
+    - Les parties du code nécessitant des informations spécifiques à votre environnement d'exécution, telles que la création réelle d'ordres MetaTrader, sont indiquées comme commentaires. Vous devrez personnaliser ces parties en fonction de votre configuration et de votre accès à l'API MetaAPI.
+
+En résumé, ce code permet à un utilisateur de se connecter à son compte MetaTrader, de définir sa langue, sa devise, de fournir des signaux de trading au bot, qui calcule ensuite les informations de transaction potentielles en fonction des signaux fournis. Le bot peut être personnalisé pour exécuter réellement des transactions sur un compte MetaTrader en utilisant l'API MetaAPI.
