@@ -5,7 +5,7 @@ import os
 import re
 
 from prettytable import PrettyTable
-from telegram import Update
+from telegram import Update, ParseMode
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater, ConversationHandler, CallbackContext
 
 # Replace with your MetaAPI and Telegram credentials
@@ -91,10 +91,9 @@ def get_trade_information(trade: dict, balance: float) -> str:
     for i, tp in enumerate(take_profit_pips):
         table.add_row(['TP {}'.format(i + 1), '{} pips'.format(tp) if i == 0 else '{} pips (Split)'])
     table.add_row(['Risk Factor', '{:.0%}'.format(trade['RiskFactor'])])
-    table.add_row(['Position Size', position_size])
 
     potential_loss = round((position_size * 10) * stop_loss_pips, 2)
-    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(total_profit)])
+    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(total_profit)]
 
     total_profit = 0
     for i, tp in enumerate(take_profit_pips):
@@ -154,7 +153,6 @@ def trade(update: Update, context: CallbackContext):
                               "Ensure it follows this format for proper processing.")
     return CALCULATE
 
-
 def calculate(update: Update, context: CallbackContext):
     signal = update.message.text
     trade = parse_signal(signal)
@@ -172,12 +170,11 @@ def calculate(update: Update, context: CallbackContext):
     update.message.reply_text(f"Trade information:\n{trade_info}", parse_mode=ParseMode.MARKDOWN)
     return FINISH
 
-
 def finish(update: Update, context: CallbackContext):
     if 'trade' in user_data:
         trade = user_data['trade']
-        # You can execute the trade here using MetaAPI
-        # Example: meta_api_instance.create_market_buy_order(ACCOUNT_ID, trade['Symbol'], trade['Volume'], trade['Entry'], trade['StopLoss'], trade['TakeProfit'])
+        # Vous pouvez exécuter le trade ici en utilisant MetaAPI
+        # Exemple: meta_api_instance.create_market_buy_order(ACCOUNT_ID, trade['Symbol'], trade['Volume'], trade['Entry'], trade['StopLoss'], trade['TakeProfit'])
 
         balance = user_data['balance']
         trade_info = get_trade_information(trade, balance)
@@ -185,7 +182,6 @@ def finish(update: Update, context: CallbackContext):
         update.message.reply_text(f"Trade confirmed! Here are the trade details:\n{trade_info}", parse_mode=ParseMode.MARKDOWN)
 
     return DECISION
-
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -198,7 +194,7 @@ def main():
                        MessageHandler(Filters.regex('^/set_currency$'), set_currency),
                        MessageHandler(Filters.regex('^/set_risk$'), set_risk),
                        MessageHandler(Filters.regex('^/trade$'), trade)],
-            CALCULATE: [MessageHandler(Filters.text, calculate)],
+            CALCULATE: [MessageHandler(Filters.text & ~Filters.command, calculate)],
             FINISH: [MessageHandler(Filters.regex('^/finish$'), finish)]
         },
         fallbacks=[]
@@ -208,6 +204,6 @@ def main():
     updater.start_polling()
     updater.idle()
 
-
 if __name__ == '__main__':
     main()
+
