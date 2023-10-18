@@ -92,7 +92,7 @@ def calculate_trade_information(trade, balance):
     table.align["Key"] = "l"
     table.align["Value"] = "l"
 
-    table.add_row(['Order Type', trade['OrderType'])
+    table.add_row(['Order Type', trade['OrderType']])
     table.add_row(['Symbol', symbol])
     table.add_row(['Entry', trade['Entry'])
     table.add_row(['Stop Loss', '{} pips'.format(stop_loss_pips)])
