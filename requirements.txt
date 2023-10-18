@@ -1,4 +1,4 @@
 gunicorn==20.1.0
-python-telegram-bot==21.0.0
+python-telegram-bot==20.3
 metaapi-cloud-sdk==2.8.5
 prettytable==2.2.0
