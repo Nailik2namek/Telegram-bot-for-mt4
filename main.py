@@ -93,7 +93,7 @@ def get_trade_information(trade: dict, balance: float) -> str:
     table.add_row(['Risk Factor', '{:.0%}'.format(trade['RiskFactor'])])
 
     potential_loss = round((position_size * 10) * stop_loss_pips, 2)
-    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(total_profit)]
+    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(potential_loss)])
 
     total_profit = 0
     for i, tp in enumerate(take_profit_pips):
