@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-import asyncio
-import logging
-import math
 import os
-
-from metaapi_cloud_sdk import MetaApi
+import math
 from prettytable import PrettyTable
 from telegram import ParseMode, Update
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater, ConversationHandler, CallbackContext
+from telegram.ext import CommandHandler, MessageHandler, Updater, ConversationHandler, Filters, CallbackContext
 
 # MetaAPI Credentials
 API_KEY = os.environ.get("API_KEY")
@@ -16,27 +12,27 @@ ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 # Telegram Credentials
 TOKEN = os.environ.get("TOKEN")
 
-# Port number for Telegram bot web hook
-PORT = int(os.environ.get('PORT', '8443'))
-
 # Enable logging
+from telegram.ext import CommandHandler
+import logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name)
 
 # Conversation states
-CALCULATE, TRADE, DECISION, SET_LANGUAGE, SET_CURRENCY, FINISH = range(6)
+SET_LANGUAGE, SET_CURRENCY, SET_RISK, TRADE, CALCULATE, FINISH = range(6)
 
 # Allowed FX symbols (you can add more)
 SYMBOLS = ['AUDCAD', 'AUDCHF', 'AUDJPY', 'AUDNZD', 'AUDUSD', 'CADCHF', 'CADJPY', 'CHFJPY', 'EURAUD', 'EURCAD',
            'EURCHF', 'EURGBP', 'EURJPY', 'EURNZD', 'EURUSD', 'GBPAUD', 'GBPCAD', 'GBPCHF', 'GBPJPY', 'GBPNZD', 'GBPUSD',
            'NZDCAD', 'NZDCHF', 'NZDJPY', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDJPY', 'XAGUSD', 'XAUUSD']
 
-# Risk factor
-RISK_FACTOR = float(os.environ.get("RISK_FACTOR", 0.01))
+# Default values
+RISK_FACTOR = 0.01
+DEFAULT_LANGUAGE = 'English'
+DEFAULT_CURRENCY = 'USD'
 
 # Dictionary to store user data during conversation
 user_data = {}
-
 
 # Helper Functions
 def parse_signal(signal: str) -> dict:
@@ -72,12 +68,11 @@ def parse_signal(signal: str) -> dict:
 
     return trade
 
-
-def get_trade_information(trade: dict, balance: float) -> str:
+def calculate_trade_information(trade, balance):
     """Calculates trade information and returns it as a string."""
     symbol_info = {
         'XAUUSD': 0.1,  # Modify as needed
-        'XAGUSD': 0.01,  # Modify as needed
+        'XAGUSD': 0.01  # Modify as needed
     }
     symbol = trade['Symbol']
 
@@ -97,15 +92,17 @@ def get_trade_information(trade: dict, balance: float) -> str:
     table.align["Key"] = "l"
     table.align["Value"] = "l"
 
-    table.add_row(['Order Type', trade['OrderType']])
+    table.add_row(['Order Type', trade['OrderType'])
     table.add_row(['Symbol', symbol])
-    table.add_row(['Entry', trade['Entry']])
+    table.add_row(['Entry', trade['Entry'])
     table.add_row(['Stop Loss', '{} pips'.format(stop_loss_pips)])
+
     for i, tp in enumerate(take_profit_pips):
         table.add_row(['TP {}'.format(i + 1), '{} pips'.format(tp)]
                      if i == 0 else ['TP {}'.format(i + 1), '{} pips'.format(tp) + " (Split)"])
-    table.add_row(['Risk Factor', '{:.0%}'.format(trade['RiskFactor'])])
-    table.add_row(['Position Size', position_size]
+
+    table.add_row(['Risk Factor', '{:.0%}'.format(trade['RiskFactor'])
+    table.add_row(['Position Size', position_size])
 
     potential_loss = round((position_size * 10) * stop_loss_pips, 2)
     table.add_row(['Potential Loss', '$ {:,.2f}'.format(potential_loss])
@@ -121,51 +118,56 @@ def get_trade_information(trade: dict, balance: float) -> str:
 
     return table.get_string()
 
-
 # Define the /start command handler to initiate the conversation
 def start(update: Update, context: CallbackContext):
     user_data.clear()
     user_data['balance'] = 10000  # Replace with your actual account balance
     user_data['RiskFactor'] = RISK_FACTOR
-    user_data['Language'] = 'English'
-    user_data['Currency'] = 'USD'
+    user_data['Language'] = DEFAULT_LANGUAGE
+    user_data['Currency'] = DEFAULT_CURRENCY
 
-    update.message.reply_text("Welcome to the Trading Signal Bot! Please use the following commands to proceed:\n\n"
-                              "/language - Set your preferred language\n"
-                              "/currency - Set your preferred currency\n"
+        update.message.reply_text("Welcome to the Trading Signal Bot! Please use the following commands to proceed:\n\n"
+                              "/set_language - Set your preferred language\n"
+                              "/set_currency - Set your preferred currency\n"
+                              "/set_risk - Set your preferred risk percentage\n"
                               "/trade - Provide a trade signal\n\n"
-                              "You can change your language and currency settings at any time.")
+                              "You can change your language, currency, and risk settings at any time.")
+    
+    return SET_LANGUAGE
 
-    return DECISION
+    return SET_LANGUAGE
 
-# Ajoutez cette fonction de gestionnaire pour la commande /start
-def start(update: Update, context: CallbackContext):
-    user = update.effective_user
-    update.message.reply_html(
-        fr"Salut {user.mention_html()}!",
-        reply_markup=your_custom_keyboard,
-    )
-
-# Ajoutez un gestionnaire pour la commande /start
-dp.add_handler(CommandHandler("start", start))
-
-
-# Define the /language command handler to set the preferred language
+# Define the /set_language command handler to set the preferred language
 def set_language(update: Update, context: CallbackContext):
-    user_data['Language'] = context.args[0]
+    language = ' '.join(context.args).title()
+    user_data['Language'] = language
 
-    update.message.reply_text(f"Your preferred language is set to {user_data['Language']}!")
+    update.message.reply_text(f"Your preferred language is set to {language}!")
+    return SET_CURRENCY
 
-    return DECISION
-
-
-# Define the /currency command handler to set the preferred currency
+# Define the /set_currency command handler to set the preferred currency
 def set_currency(update: Update, context: CallbackContext):
-    user_data['Currency'] = context.args[0]
+    currency = context.args[0].upper()
+    user_data['Currency'] = currency
 
-    update.message.reply_text(f"Your preferred currency is set to {user_data['Currency']}!")
+    update.message.reply_text(f"Your preferred currency is set to {currency}!")
+    return SET_RISK
 
-    return DEC
+# Define the /set_risk command handler to set the preferred risk percentage
+def set_risk(update: Update, context: CallbackContext):
+    try:
+        risk = float(context.args[0])
+        if 0 < risk <= 1:
+            user_data['RiskFactor'] = risk
+            update.message.reply_text(f"Your preferred risk percentage is set to {risk * 100}%!")
+            return TRADE
+        else:
+            update.message.reply_text("Please enter a risk percentage between 0 and 100.")
+            return SET_RISK
+    except ValueError:
+        update.message.reply_text("Invalid input. Please enter a valid risk percentage.")
+        return SET_RISK
+
 # Define the /trade command handler to provide a trade signal
 def trade(update: Update, context: CallbackContext):
     update.message.reply_text("Please provide the trade signal in the following format:\n\n"
@@ -175,7 +177,6 @@ def trade(update: Update, context: CallbackContext):
                               "💣 SL : 1.11845\n"
                               "Ensure it follows this format for proper processing.")
     return CALCULATE
-
 
 # Define the conversation handler for trade signal processing
 def calculate(update: Update, context: CallbackContext):
@@ -192,13 +193,10 @@ def calculate(update: Update, context: CallbackContext):
     balance = user_data['balance']
     trade['RiskFactor'] = user_data['RiskFactor']
     trade['Entry'] = trade['StopLoss'] + 0.001  # Replace with your preferred entry price
-    trade_info = get_trade_information(trade, balance)
+    trade_info = calculate_trade_information(trade, balance)
 
-    update.message.reply_text(f"Trade information:\n{trade_info}",
-                              parse_mode=ParseMode.MARKDOWN)
-
+    update.message.reply_text(f"Trade information:\n{trade_info}", parse_mode=ParseMode.MARKDOWN)
     return FINISH
-
 
 # Define the /finish command handler to confirm the trade
 def finish(update: Update, context: CallbackContext):
@@ -208,13 +206,11 @@ def finish(update: Update, context: CallbackContext):
         # Example: meta_api_instance.create_market_buy_order(ACCOUNT_ID, trade['Symbol'], trade['Volume'], trade['Entry'], trade['StopLoss'], trade['TakeProfit'])
 
         balance = user_data['balance']
-        trade_info = get_trade_information(trade, balance)
+        trade_info = calculate_trade_information(trade, balance)
 
-        update.message.reply_text(f"Trade confirmed! Here are the trade details:\n{trade_info}",
-                                  parse_mode=ParseMode.MARKDOWN)
-
-    return DECISION
-
+        update.message.reply_text(f"Trade confirmed! Here are the trade details:\n{trade_info}", parse_mode=ParseMode.MARKDOWN)
+    user_data.clear()  # Clear user data after trade confirmation
+    return SET_LANGUAGE
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -223,11 +219,12 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            DECISION: [MessageHandler(Filters.regex('^/language$'), set_language),
-                       MessageHandler(Filters.regex('^/currency$'), set_currency),
-                       MessageHandler(Filters.regex('^/trade$'), trade)],
+            SET_LANGUAGE: [CommandHandler('set_language', set_language)],
+            SET_CURRENCY: [CommandHandler('set_currency', set_currency)],
+            SET_RISK: [CommandHandler('set_risk', set_risk)],
+            TRADE: [CommandHandler('trade', trade)],
             CALCULATE: [MessageHandler(Filters.text, calculate)],
-            FINISH: [MessageHandler(Filters.regex('^/finish$'), finish)]
+            FINISH: [CommandHandler('finish', finish)]
         },
         fallbacks=[]
     )
@@ -235,7 +232,6 @@ def main():
 
     updater.start_polling()
     updater.idle()
-
 
 if __name__ == '__main__':
     main()
