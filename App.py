@@ -102,7 +102,7 @@ def get_trade_information(trade: dict, balance: float) -> str:
         table.add_row(['TP {} Profit'.format(i + 1), '$ {:,.2f}'.format(profit) if i == 0 else '$ {:,.2f} (Split)'])
         total_profit += profit
 
-    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(total_profit])
+    table.add_row(['Total Potential Profit', '$ {:,.2f}'.format(total_profit)])
 
     return table.get_string()
 
